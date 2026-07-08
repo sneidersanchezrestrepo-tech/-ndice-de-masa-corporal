@@ -26,20 +26,66 @@
             padding: 20px;
             display: flex;
             justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            box-sizing: border-box;
         }
 
         .container {
             max-width: 800px;
             width: 100%;
             position: relative;
+            display: none; /* Oculto hasta que se autentique */
         }
 
-        /* Cabecera con botón de papelera arriba a la derecha */
+        /* --- PANTALLA DE LOGIN --- */
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 70vh;
+            width: 100%;
+            max-width: 400px;
+            margin: auto;
+        }
+
+        .btn-google {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background-color: white;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: background 0.2s, transform 0.1s;
+            width: 100%;
+        }
+
+        .btn-google:hover {
+            background-color: #f9fafb;
+            transform: translateY(-1px);
+        }
+
+        /* Cabecera */
         .header-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
         }
 
         .btn-papelera {
@@ -54,9 +100,21 @@
             transition: background 0.2s;
         }
 
-        .btn-papelera:hover {
-            background-color: #374151;
+        .btn-papelera:hover { background-color: #374151; }
+
+        .btn-logout {
+            background-color: #9ca3af;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
         }
+
+        .btn-logout:hover { background-color: #6b7280; }
 
         h1, h2 {
             margin: 0;
@@ -81,9 +139,7 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        .form-group {
-            margin-bottom: 15px;
-        }
+        .form-group { margin-bottom: 15px; }
 
         label {
             display: block;
@@ -114,9 +170,7 @@
             transition: background 0.2s;
         }
 
-        button:hover {
-            background-color: var(--primary-hover);
-        }
+        button:hover { background-color: var(--primary-hover); }
 
         .imc-box {
             text-align: center;
@@ -162,10 +216,7 @@
             font-size: 0.85rem;
             width: auto;
         }
-
-        .btn-delete:hover {
-            background-color: var(--danger-hover);
-        }
+        .btn-delete:hover { background-color: var(--danger-hover); }
 
         .btn-restore {
             background-color: var(--success);
@@ -174,10 +225,7 @@
             width: auto;
             margin-right: 5px;
         }
-
-        .btn-restore:hover {
-            background-color: var(--success-hover);
-        }
+        .btn-restore:hover { background-color: var(--success-hover); }
 
         .chart-container {
             position: relative;
@@ -186,9 +234,9 @@
             width: 100%;
         }
 
-        /* --- ESTILOS DE LA VENTANA MODAL (EMERGENTE) --- */
+        /* --- MODAL --- */
         .modal {
-            display: none; /* Oculto por defecto */
+            display: none;
             position: fixed;
             z-index: 1000;
             left: 0;
@@ -225,18 +273,30 @@
             color: #9ca3af;
             cursor: pointer;
         }
-
-        .close-modal:hover {
-            color: #1f2937;
-        }
+        .close-modal:hover { color: #1f2937; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div id="login-screen" class="login-container card">
+    <h2 style="margin-bottom: 10px; text-align: center;">Control de Peso</h2>
+    <p style="color: #6b7280; font-size: 0.9rem; text-align: center; margin-bottom: 25px;">Inicia sesión para registrar tu progreso de forma segura.</p>
+    <button class="btn-google" onclick="loginConGoogle()">
+        <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/web-24dp/logo_googleg_color_24dp.png" alt="Google Logo" width="20">
+        Iniciar sesión con Google
+    </button>
+</div>
+
+<div id="app-screen" class="container">
     <div class="header-container">
-        <h1>Control de Peso e IMC</h1>
-        <button class="btn-papelera" onclick="abrirModal()">🗑️ Historial Eliminado</button>
+        <div>
+            <h1>Control de Peso e IMC</h1>
+            <span id="user-email" style="font-size: 0.85rem; color: #6b7280;"></span>
+        </div>
+        <div class="header-actions">
+            <button class="btn-papelera" onclick="abrirModal()">🗑️ Historial Eliminado</button>
+            <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+        </div>
     </div>
 
     <div class="grid">
@@ -291,8 +351,7 @@
                         <th>Acción</th>
                     </tr>
                 </thead>
-                <tbody id="tabla-registros">
-                    </tbody>
+                <tbody id="tabla-registros"></tbody>
             </table>
         </div>
     </div>
@@ -314,8 +373,7 @@
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="tabla-papelera">
-                    </tbody>
+                <tbody id="tabla-papelera"></tbody>
             </table>
         </div>
     </div>
@@ -324,12 +382,14 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+    import { 
+        getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { 
         getFirestore, collection, doc, setDoc, getDoc, onSnapshot, deleteDoc 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Tu configuración de Firebase
+    // Configuración de Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyALWzPWrPceYVCoo4NAhH5ripdTwyoECjk",
         authDomain: "indice-de-masa-corporal-e3718.firebaseapp.com",
@@ -342,26 +402,72 @@
 
     // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
+    const auth = getAuth(app);
     const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
 
-    // Variables de control de datos
+    // Variables de control de datos y desuscripción de observadores de Firebase
     let registros = [];
     let registrosBorrados = [];
     let miGrafica;
+    let usuarioActual = null;
+    let unsubHistorial = null;
+    let unsubPapelera = null;
 
-    // Inicializar fecha de hoy por defecto
+    // Inicializar fecha por defecto
     document.getElementById('fecha-registro').value = new Date().toISOString().split('T')[0];
-    
-    // Escuchas en tiempo real activos
-    cargarPerfilDesdeFirebase();
-    escucharHistorialFirebase();
-    escucharPapeleraFirebase(); // Nueva escucha en la nube
+
+    // --- OBSERVADOR DE ESTADO DE AUTENTICACIÓN ---
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // Usuario conectado
+            usuarioActual = user;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'block';
+            document.getElementById('user-email').textContent = user.email;
+
+            // Iniciar cargas en base al UID del usuario conectado
+            cargarPerfilDesdeFirebase();
+            escucharHistorialFirebase();
+            escucharPapeleraFirebase();
+        } else {
+            // Usuario desconectado
+            usuarioActual = null;
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('app-screen').style.display = 'none';
+            
+            // Cancelar observadores previos si existen
+            if (unsubHistorial) unsubHistorial();
+            if (unsubPapelera) unsubPapelera();
+            
+            limpiarUI();
+        }
+    });
+
+    // --- FUNCIONES DE AUTENTICACIÓN (PROVISTAS A WINDOW) ---
+    window.loginConGoogle = async function() {
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            console.error("Error al iniciar sesión con Google:", error);
+            alert("No se pudo iniciar sesión de Google.");
+        }
+    }
+
+    window.cerrarSesion = async function() {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error("Error al cerrar sesión:", error);
+        }
+    }
 
     // --- MANEJO DEL PERFIL DE USUARIO ---
     async function cargarPerfilDesdeFirebase() {
+        if (!usuarioActual) return;
         try {
-            const docRef = doc(db, "perfil", "usuario_actual");
+            // Se guarda en la subcolección del usuario
+            const docRef = doc(db, "usuarios", usuarioActual.uid, "perfil", "usuario_actual");
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 const datos = docSnap.data();
@@ -375,6 +481,7 @@
     }
 
     window.guardarPerfilCorporal = async function() {
+        if (!usuarioActual) return;
         const altura = document.getElementById('altura').value;
         const pesoActual = document.getElementById('peso-actual').value;
 
@@ -384,12 +491,10 @@
         }
 
         try {
-            await setDoc(doc(db, "perfil", "usuario_actual"), {
-                altura: altura,
-                pesoActual: pesoActual
-            });
+            const docRef = doc(db, "usuarios", usuarioActual.uid, "perfil", "usuario_actual");
+            await setDoc(docRef, { altura, pesoActual });
             calcularIMCDeCampos(altura, pesoActual);
-            alert("¡Perfil guardado en Firebase!");
+            alert("¡Perfil guardado!");
         } catch (error) {
             console.error("Error al guardar perfil:", error);
         }
@@ -415,6 +520,7 @@
 
     // --- MANEJO DEL HISTORIAL DIARIO ---
     window.agregarRegistroFirebase = async function() {
+        if (!usuarioActual) return;
         const fecha = document.getElementById('fecha-registro').value; 
         const peso = parseFloat(document.getElementById('peso-registro').value);
 
@@ -424,51 +530,57 @@
         }
 
         try {
-            await setDoc(doc(db, "historial_peso", fecha), { fecha, peso });
+            const docRef = doc(db, "usuarios", usuarioActual.uid, "historial_peso", fecha);
+            await setDoc(docRef, { fecha, peso });
             document.getElementById('peso-registro').value = '';
         } catch (error) {
             console.error("Error al añadir registro:", error);
         }
     }
 
-    // Al "Borrar", se quita de historial_peso y se envía a papelera
     window.moverAPapelera = async function(fecha, peso) {
+        if (!usuarioActual) return;
         if (confirm("¿Quieres enviar este registro al historial de eliminados?")) {
             try {
-                // 1. Guardar en la colección de la papelera
-                await setDoc(doc(db, "papelera", fecha), { fecha, peso });
-                // 2. Eliminar de la colección principal
-                await deleteDoc(doc(db, "historial_peso", fecha));
+                const docPapelera = doc(db, "usuarios", usuarioActual.uid, "papelera", fecha);
+                const docHistorial = doc(db, "usuarios", usuarioActual.uid, "historial_peso", fecha);
+                
+                await setDoc(docPapelera, { fecha, peso });
+                await deleteDoc(docHistorial);
             } catch (error) {
                 console.error("Error al mover a la papelera:", error);
             }
         }
     }
 
-    // Desde la papelera: se regresa a historial_peso y se borra de papelera
     window.restaurarRegistro = async function(fecha, peso) {
+        if (!usuarioActual) return;
         try {
-            await setDoc(doc(db, "historial_peso", fecha), { fecha, peso });
-            await deleteDoc(doc(db, "papelera", fecha));
+            const docHistorial = doc(db, "usuarios", usuarioActual.uid, "historial_peso", fecha);
+            const docPapelera = doc(db, "usuarios", usuarioActual.uid, "papelera", fecha);
+            
+            await setDoc(docHistorial, { fecha, peso });
+            await deleteDoc(docPapelera);
         } catch (error) {
             console.error("Error al restaurar:", error);
         }
     }
 
-    // Desde la papelera: Destrucción definitiva
     window.eliminarDefinitivo = async function(fecha) {
+        if (!usuarioActual) return;
         if (confirm("¿Estás completamente seguro? Esto borrará el dato para siempre.")) {
             try {
-                await deleteDoc(doc(db, "papelera", fecha));
+                const docPapelera = doc(db, "usuarios", usuarioActual.uid, "papelera", fecha);
+                await deleteDoc(docPapelera);
             } catch (error) {
                 console.error("Error al eliminar definitivo:", error);
             }
         }
     }
 
-    // Escuchar tabla principal
     function escucharHistorialFirebase() {
-        onSnapshot(collection(db, "historial_peso"), (querySnapshot) => {
+        const colRef = collection(db, "usuarios", usuarioActual.uid, "historial_peso");
+        unsubHistorial = onSnapshot(colRef, (querySnapshot) => {
             registros = [];
             querySnapshot.forEach((doc) => { registros.push(doc.data()); });
             registros.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
@@ -476,12 +588,12 @@
         });
     }
 
-    // Escuchar tabla de eliminados (Papelera)
     function escucharPapeleraFirebase() {
-        onSnapshot(collection(db, "papelera"), (querySnapshot) => {
+        const colRef = collection(db, "usuarios", usuarioActual.uid, "papelera");
+        unsubPapelera = onSnapshot(colRef, (querySnapshot) => {
             registrosBorrados = [];
             querySnapshot.forEach((doc) => { registrosBorrados.push(doc.data()); });
-            registrosBorrados.sort((a, b) => new Date(b.fecha) - new Date(b.fecha));
+            registrosBorrados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
             actualizarTablaPapelera();
         });
     }
@@ -517,8 +629,7 @@
             return;
         }
 
-        const borradosClonados = [...registrosBorrados].reverse();
-        borradosClonados.forEach((reg) => {
+        registrosBorrados.forEach((reg) => {
             const fila = document.createElement('tr');
             fila.innerHTML = `
                 <td>${formatearFecha(reg.fecha)}</td>
@@ -567,7 +678,17 @@
         });
     }
 
-    // Funciones globales para controlar el Modal
+    function limpiarUI() {
+        document.getElementById('altura').value = '';
+        document.getElementById('peso-actual').value = '';
+        document.getElementById('imc-resultado').textContent = '--';
+        document.getElementById('imc-clasificacion').textContent = '-';
+        document.getElementById('tabla-registros').innerHTML = '';
+        document.getElementById('tabla-papelera').innerHTML = '';
+        if (miGrafica) { miGrafica.destroy(); }
+    }
+
+    // Ventana Modal
     window.abrirModal = function() {
         document.getElementById('modalPapelera').style.display = 'flex';
     }
@@ -576,13 +697,12 @@
         document.getElementById('modalPapelera').style.display = 'none';
     }
 
-    // Cerrar la ventana si se hace clic fuera del recuadro blanco
-    window.onclick = function(event) {
+    window.addEventListener('click', (event) => {
         const modal = document.getElementById('modalPapelera');
         if (event.target === modal) {
             cerrarModal();
         }
-    }
+    });
 </script>
 
 </body>
