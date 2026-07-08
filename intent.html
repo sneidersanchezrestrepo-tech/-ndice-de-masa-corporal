@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Peso e IMC - Firebase Cloud</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --success: #10b981;
+            --success-hover: #059669;
+            --background: #f3f4f6;
+            --surface: #ffffff;
+            --text: #1f2937;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Cabecera con botón de papelera arriba a la derecha */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-papelera {
+            background-color: #4b5563;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-papelera:hover {
+            background-color: #374151;
+        }
+
+        h1, h2 {
+            margin: 0;
+            color: #111827;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        button {
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .imc-box {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            background: #eef2ff;
+            margin-top: 15px;
+        }
+
+        #imc-resultado {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 5px 0;
+        }
+
+        .table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background-color: #f9fafb;
+            position: sticky;
+            top: 0;
+        }
+
+        .btn-delete {
+            background-color: var(--danger);
+            padding: 5px 10px;
+            font-size: 0.85rem;
+            width: auto;
+        }
+
+        .btn-delete:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .btn-restore {
+            background-color: var(--success);
+            padding: 5px 10px;
+            font-size: 0.85rem;
+            width: auto;
+            margin-right: 5px;
+        }
+
+        .btn-restore:hover {
+            background-color: var(--success-hover);
+        }
+
+        .chart-container {
+            position: relative;
+            margin-top: 20px;
+            height: 300px;
+            width: 100%;
+        }
+
+        /* --- ESTILOS DE LA VENTANA MODAL (EMERGENTE) --- */
+        .modal {
+            display: none; /* Oculto por defecto */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--surface);
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .close-modal {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #9ca3af;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: #1f2937;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-container">
+        <h1>Control de Peso e IMC</h1>
+        <button class="btn-papelera" onclick="abrirModal()">🗑️ Historial Eliminado</button>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h2>Datos Corporales</h2>
+            <div class="form-group">
+                <label for="altura">Altura (cm):</label>
+                <input type="number" id="altura" placeholder="Ej. 175" min="100" max="250">
+            </div>
+            <div class="form-group">
+                <label for="peso-actual">Peso Actual (kg):</label>
+                <input type="number" id="peso-actual" step="0.1" placeholder="Ej. 70.5">
+            </div>
+            <button onclick="guardarPerfilCorporal()">Calcular y Guardar en Firebase</button>
+
+            <div class="imc-box">
+                <div>Tu IMC es:</div>
+                <div id="imc-resultado">--</div>
+                <div id="imc-clasificacion">-</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Registro de Peso Diario</h2>
+            <div class="form-group">
+                <label for="fecha-registro">Fecha:</label>
+                <input type="date" id="fecha-registro">
+            </div>
+            <div class="form-group">
+                <label for="peso-registro">Peso (kg):</label>
+                <input type="number" id="peso-registro" step="0.1" placeholder="Ej. 70.2">
+            </div>
+            <button onclick="agregarRegistroFirebase()">Guardar Registro</button>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 20px;">
+        <h2>Evolución del Peso</h2>
+        <div class="chart-container">
+            <canvas id="graficaPeso"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Historial de Registros</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Peso (kg)</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-registros">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="modalPapelera" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Historial de Eliminados (Papelera)</h2>
+            <span class="close-modal" onclick="cerrarModal()">&times;</span>
+        </div>
+        <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 15px;">Aquí puedes restaurar los registros a la tabla principal o borrarlos definitivamente.</p>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Peso (kg)</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-papelera">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+    import { 
+        getFirestore, collection, doc, setDoc, getDoc, onSnapshot, deleteDoc 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Tu configuración de Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyALWzPWrPceYVCoo4NAhH5ripdTwyoECjk",
+        authDomain: "indice-de-masa-corporal-e3718.firebaseapp.com",
+        projectId: "indice-de-masa-corporal-e3718",
+        storageBucket: "indice-de-masa-corporal-e3718.firebasestorage.app",
+        messagingSenderId: "899842817590",
+        appId: "1:899842817590:web:ca3ce62aa4b6b53789a297",
+        measurementId: "G-7KY9V4GKWP"
+    };
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    // Variables de control de datos
+    let registros = [];
+    let registrosBorrados = [];
+    let miGrafica;
+
+    // Inicializar fecha de hoy por defecto
+    document.getElementById('fecha-registro').value = new Date().toISOString().split('T')[0];
+    
+    // Escuchas en tiempo real activos
+    cargarPerfilDesdeFirebase();
+    escucharHistorialFirebase();
+    escucharPapeleraFirebase(); // Nueva escucha en la nube
+
+    // --- MANEJO DEL PERFIL DE USUARIO ---
+    async function cargarPerfilDesdeFirebase() {
+        try {
+            const docRef = doc(db, "perfil", "usuario_actual");
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const datos = docSnap.data();
+                document.getElementById('altura').value = datos.altura;
+                document.getElementById('peso-actual').value = datos.pesoActual;
+                calcularIMCDeCampos(datos.altura, datos.pesoActual);
+            }
+        } catch (error) {
+            console.error("Error al cargar perfil:", error);
+        }
+    }
+
+    window.guardarPerfilCorporal = async function() {
+        const altura = document.getElementById('altura').value;
+        const pesoActual = document.getElementById('peso-actual').value;
+
+        if (!altura || !pesoActual) {
+            alert("Por favor, introduce tu altura y peso.");
+            return;
+        }
+
+        try {
+            await setDoc(doc(db, "perfil", "usuario_actual"), {
+                altura: altura,
+                pesoActual: pesoActual
+            });
+            calcularIMCDeCampos(altura, pesoActual);
+            alert("¡Perfil guardado en Firebase!");
+        } catch (error) {
+            console.error("Error al guardar perfil:", error);
+        }
+    }
+
+    function calcularIMCDeCampos(alturaCm, pesoKg) {
+        const alturaMetros = parseFloat(alturaCm) / 100;
+        const peso = parseFloat(pesoKg);
+
+        if (alturaMetros > 0 && peso > 0) {
+            const imc = (peso / (alturaMetros * alturaMetros)).toFixed(1);
+            document.getElementById('imc-resultado').textContent = imc;
+            
+            let clasificacion = "";
+            if (imc < 18.5) clasificacion = "Bajo peso";
+            else if (imc < 25) clasificacion = "Peso normal";
+            else if (imc < 30) clasificacion = "Sobrepeso";
+            else clasificacion = "Obesidad";
+            
+            document.getElementById('imc-clasificacion').textContent = clasificacion;
+        }
+    }
+
+    // --- MANEJO DEL HISTORIAL DIARIO ---
+    window.agregarRegistroFirebase = async function() {
+        const fecha = document.getElementById('fecha-registro').value; 
+        const peso = parseFloat(document.getElementById('peso-registro').value);
+
+        if (!fecha || !peso) {
+            alert("Por favor, completa la fecha y el peso.");
+            return;
+        }
+
+        try {
+            await setDoc(doc(db, "historial_peso", fecha), { fecha, peso });
+            document.getElementById('peso-registro').value = '';
+        } catch (error) {
+            console.error("Error al añadir registro:", error);
+        }
+    }
+
+    // Al "Borrar", se quita de historial_peso y se envía a papelera
+    window.moverAPapelera = async function(fecha, peso) {
+        if (confirm("¿Quieres enviar este registro al historial de eliminados?")) {
+            try {
+                // 1. Guardar en la colección de la papelera
+                await setDoc(doc(db, "papelera", fecha), { fecha, peso });
+                // 2. Eliminar de la colección principal
+                await deleteDoc(doc(db, "historial_peso", fecha));
+            } catch (error) {
+                console.error("Error al mover a la papelera:", error);
+            }
+        }
+    }
+
+    // Desde la papelera: se regresa a historial_peso y se borra de papelera
+    window.restaurarRegistro = async function(fecha, peso) {
+        try {
+            await setDoc(doc(db, "historial_peso", fecha), { fecha, peso });
+            await deleteDoc(doc(db, "papelera", fecha));
+        } catch (error) {
+            console.error("Error al restaurar:", error);
+        }
+    }
+
+    // Desde la papelera: Destrucción definitiva
+    window.eliminarDefinitivo = async function(fecha) {
+        if (confirm("¿Estás completamente seguro? Esto borrará el dato para siempre.")) {
+            try {
+                await deleteDoc(doc(db, "papelera", fecha));
+            } catch (error) {
+                console.error("Error al eliminar definitivo:", error);
+            }
+        }
+    }
+
+    // Escuchar tabla principal
+    function escucharHistorialFirebase() {
+        onSnapshot(collection(db, "historial_peso"), (querySnapshot) => {
+            registros = [];
+            querySnapshot.forEach((doc) => { registros.push(doc.data()); });
+            registros.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            actualizarUI();
+        });
+    }
+
+    // Escuchar tabla de eliminados (Papelera)
+    function escucharPapeleraFirebase() {
+        onSnapshot(collection(db, "papelera"), (querySnapshot) => {
+            registrosBorrados = [];
+            querySnapshot.forEach((doc) => { registrosBorrados.push(doc.data()); });
+            registrosBorrados.sort((a, b) => new Date(b.fecha) - new Date(b.fecha));
+            actualizarTablaPapelera();
+        });
+    }
+
+    // --- RENDERIZADO DE INTERFAZ ---
+    function actualizarUI() {
+        actualizarTablaPrincipal();
+        actualizarGrafica();
+    }
+
+    function actualizarTablaPrincipal() {
+        const tbody = document.getElementById('tabla-registros');
+        tbody.innerHTML = '';
+        const registrosClonados = [...registros].reverse();
+
+        registrosClonados.forEach((reg) => {
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td>${formatearFecha(reg.fecha)}</td>
+                <td>${reg.peso} kg</td>
+                <td><button class="btn-delete" onclick="moverAPapelera('${reg.fecha}', ${reg.peso})">Borrar</button></td>
+            `;
+            tbody.appendChild(fila);
+        });
+    }
+
+    function actualizarTablaPapelera() {
+        const tbody = document.getElementById('tabla-papelera');
+        tbody.innerHTML = '';
+        
+        if (registrosBorrados.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#9ca3af;">La papelera está vacía.</td></tr>`;
+            return;
+        }
+
+        const borradosClonados = [...registrosBorrados].reverse();
+        borradosClonados.forEach((reg) => {
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td>${formatearFecha(reg.fecha)}</td>
+                <td>${reg.peso} kg</td>
+                <td>
+                    <button class="btn-restore" onclick="restaurarRegistro('${reg.fecha}', ${reg.peso})">Restaurar</button>
+                    <button class="btn-delete" onclick="eliminarDefinitivo('${reg.fecha}')">Eliminar</button>
+                </td>
+            `;
+            tbody.appendChild(fila);
+        });
+    }
+
+    function formatearFecha(fechaStr) {
+        const partes = fechaStr.split('-');
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+
+    function actualizarGrafica() {
+        const ctx = document.getElementById('graficaPeso').getContext('2d');
+        const fechas = registros.map(r => formatearFecha(r.fecha));
+        const pesos = registros.map(r => r.peso);
+
+        if (miGrafica) { miGrafica.destroy(); }
+
+        miGrafica = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: fechas,
+                datasets: [{
+                    label: 'Historial de Peso (kg)',
+                    data: pesos,
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.15,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: false } }
+            }
+        });
+    }
+
+    // Funciones globales para controlar el Modal
+    window.abrirModal = function() {
+        document.getElementById('modalPapelera').style.display = 'flex';
+    }
+
+    window.cerrarModal = function() {
+        document.getElementById('modalPapelera').style.display = 'none';
+    }
+
+    // Cerrar la ventana si se hace clic fuera del recuadro blanco
+    window.onclick = function(event) {
+        const modal = document.getElementById('modalPapelera');
+        if (event.target === modal) {
+            cerrarModal();
+        }
+    }
+</script>
+
+</body>
+</html>
